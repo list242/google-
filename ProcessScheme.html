@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#0f1730;
+      --card:#121c38;
+      --card2:#0f1833;
+      --stroke:rgba(255,255,255,.10);
+      --stroke2:rgba(255,255,255,.16);
+      --text:#eaf0ff;
+      --muted:rgba(234,240,255,.72);
+      --muted2:rgba(234,240,255,.55);
+
+      --accent:#7c5cff;
+      --accent2:#4dd6ff;
+      --good:#2de38a;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+
+      --shadow: 0 18px 50px rgba(0,0,0,.35);
+      --radius: 18px;
+      --radius2: 14px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 700px at 20% 0%, rgba(124,92,255,.25), transparent 55%),
+                  radial-gradient(900px 600px at 85% 10%, rgba(77,214,255,.18), transparent 60%),
+                  linear-gradient(180deg, #070b18 0%, #0b1020 100%);
+      color:var(--text);
+      font-family:var(--sans);
+    }
+
+    .wrap{
+      padding:18px 18px 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .top{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      justify-content:space-between;
+      margin-bottom:14px;
+    }
+
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .title h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.2px;
+      font-weight:800;
+    }
+    .title p{
+      margin:0;
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.35;
+      max-width: 760px;
+    }
+
+    .toolbar{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .btn{
+      border:1px solid var(--stroke2);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      border-radius: 12px;
+      padding:10px 12px;
+      font-weight:700;
+      font-size:12px;
+      cursor:pointer;
+      transition:.15s;
+      box-shadow: 0 10px 30px rgba(0,0,0,.15);
+    }
+    .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.06);}
+    .btn:active{transform: translateY(0px);}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.4fr .9fr;
+      gap:14px;
+      align-items:start;
+    }
+
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .panelHead{
+      padding:14px 14px 12px;
+      border-bottom:1px solid var(--stroke);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background: rgba(255,255,255,.03);
+    }
+
+    .panelHead .label{
+      font-weight:900;
+      font-size:12px;
+      letter-spacing:.35px;
+      color: rgba(234,240,255,.9);
+      text-transform: uppercase;
+    }
+
+    .legend{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.15);
+      border-radius: 999px;
+      padding:6px 10px;
+      font-size:11px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+
+    .dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(124,92,255,.14);
+    }
+    .dot.c2{background:var(--accent2); box-shadow:0 0 0 4px rgba(77,214,255,.12);}
+    .dot.good{background:var(--good); box-shadow:0 0 0 4px rgba(45,227,138,.12);}
+    .dot.warn{background:var(--warn); box-shadow:0 0 0 4px rgba(255,204,102,.12);}
+    .dot.bad{background:var(--bad); box-shadow:0 0 0 4px rgba(255,107,107,.12);}
+
+    .content{
+      padding:14px;
+    }
+
+    /* Flow */
+    .flow{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      padding: 14px;
+    }
+
+    .node{
+      position:relative;
+      padding:12px 12px 12px 12px;
+      border-radius: var(--radius2);
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      overflow:hidden;
+    }
+
+    .node::before{
+      content:"";
+      position:absolute;
+      left:0; top:0; bottom:0;
+      width:6px;
+      background: rgba(124,92,255,.8);
+    }
+
+    .node .meta{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      justify-content:space-between;
+    }
+
+    .node .t{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+
+    .node .name{
+      font-weight:900;
+      font-size:13px;
+      line-height:1.2;
+    }
+
+    .node .desc{
+      font-size:12px;
+      line-height:1.35;
+      color: var(--muted);
+    }
+
+    .node .role{
+      font-size:11px;
+      font-family: var(--mono);
+      color: rgba(234,240,255,.78);
+      padding:6px 8px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.16);
+      border-radius: 999px;
+      white-space:nowrap;
+    }
+
+    .arrow{
+      display:flex;
+      justify-content:center;
+      color: rgba(234,240,255,.35);
+      font-size:18px;
+      margin-top:-2px;
+      margin-bottom:-2px;
+      user-select:none;
+    }
+
+    /* types */
+    .node.design::before{background: rgba(124,92,255,.9);}
+    .node.check::before{background: rgba(255,204,102,.95);}
+    .node.dev::before{background: rgba(77,214,255,.95);}
+    .node.pm::before{background: rgba(45,227,138,.95);}
+    .node.doc::before{background: rgba(234,240,255,.55);}
+
+    /* Decision */
+    .decision{
+      border-style: dashed;
+      background: rgba(255,204,102,.06);
+    }
+
+    .decision .name{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .badge{
+      font-size:11px;
+      font-weight:900;
+      padding:4px 8px;
+      border-radius: 999px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.18);
+      color: rgba(234,240,255,.85);
+    }
+
+    /* Branch */
+    .branch{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+
+    .mini{
+      padding:10px;
+      border-radius: 14px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.14);
+    }
+
+    .mini .k{
+      font-weight:900;
+      font-size:11px;
+      text-transform: uppercase;
+      letter-spacing:.25px;
+      color: rgba(234,240,255,.75);
+      margin-bottom:6px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .mini ul{
+      margin:0;
+      padding-left: 18px;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    /* Side */
+    .side{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .roles{
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .roleRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.02);
+      border-radius: 14px;
+    }
+
+    .roleRow .rname{
+      font-weight:900;
+      font-size:12.5px;
+    }
+    .roleRow .rdesc{
+      font-size:11.5px;
+      color: var(--muted);
+      text-align:right;
+      line-height:1.25;
+    }
+
+    .note{
+      padding: 14px;
+      color: var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .kbd{
+      font-family: var(--mono);
+      font-size:11px;
+      padding:2px 6px;
+      border-radius: 8px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.20);
+      color: rgba(234,240,255,.85);
+    }
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr;}
+      .toolbar{justify-content:flex-start; flex-wrap:wrap;}
+      .legend{justify-content:flex-start;}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="title">
+        <h1>🧩 Схема процесса разработки сайта</h1>
+        <p>
+          Мини-Lucidchart внутри Google Sheets: этапы, роли, проверки, циклы правок и параллельная интеграция в 1С-Битрикс.
+        </p>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn" onclick="window.print()">🖨️ Печать / PDF</button>
+        <button class="btn" onclick="copyText()">📋 Скопировать текст</button>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <!-- MAIN FLOW -->
+      <div class="panel">
+        <div class="panelHead">
+          <div class="label">Основной поток</div>
+          <div class="legend">
+            <span class="pill"><span class="dot"></span> Дизайн</span>
+            <span class="pill"><span class="dot warn"></span> Проверка</span>
+            <span class="pill"><span class="dot c2"></span> Верстка / Dev</span>
+            <span class="pill"><span class="dot good"></span> PM / управление</span>
+          </div>
+        </div>
+
+        <div class="flow">
+
+          <div class="node pm">
+            <div class="meta">
+              <div class="t">
+                <div class="name">START → Проект запущен</div>
+                <div class="desc">PM сопровождает процесс и ведёт сквозное ТЗ на всех этапах.</div>
+              </div>
+              <div class="role">Project Manager</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node pm">
+            <div class="meta">
+              <div class="t">
+                <div class="name">1) Структура базовых страниц сайта</div>
+                <div class="desc">Карта сайта: главная, услуги, контакты, блог, карточки услуг и т.д.</div>
+              </div>
+              <div class="role">Аккаунт-менеджер</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node design">
+            <div class="meta">
+              <div class="t">
+                <div class="name">2) Отрисовка шаблона / дизайн-концепт</div>
+                <div class="desc">Первичный UI: стиль, типографика, сетка, компоненты.</div>
+              </div>
+              <div class="role">Дизайнер</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node pm">
+            <div class="meta">
+              <div class="t">
+                <div class="name">3) Детальная структура каждой страницы</div>
+                <div class="desc">Блоки, порядок, логика, CTA, контентная структура.</div>
+              </div>
+              <div class="role">Аккаунт + PM</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node design">
+            <div class="meta">
+              <div class="t">
+                <div class="name">4) Дизайн всего сайта</div>
+                <div class="desc">Все страницы + состояния элементов.</div>
+              </div>
+              <div class="role">Дизайнер</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node check">
+            <div class="meta">
+              <div class="t">
+                <div class="name">5) Проверка SEO и контент-менеджера</div>
+                <div class="desc">SEO-логика, заголовки, смысловые блоки, требования к контенту.</div>
+              </div>
+              <div class="role">SEO + Контент</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node check decision">
+            <div class="meta">
+              <div class="t">
+                <div class="name">
+                  6) Решение: есть правки от SEO/контента?
+                  <span class="badge">ROMB</span>
+                </div>
+                <div class="desc">Если да — дизайнер правит и снова на проверку.</div>
+              </div>
+              <div class="role">Контроль</div>
+            </div>
+
+            <div class="branch" style="margin-top:10px;">
+              <div class="mini">
+                <div class="k"><span class="dot bad"></span> YES</div>
+                <ul>
+                  <li>Дизайнер вносит правки</li>
+                  <li>Возврат на проверку SEO/контента</li>
+                </ul>
+              </div>
+              <div class="mini">
+                <div class="k"><span class="dot good"></span> NO</div>
+                <ul>
+                  <li>Переход к контрольной проверке</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node check">
+            <div class="meta">
+              <div class="t">
+                <div class="name">7) Контрольная проверка</div>
+                <div class="desc">UX, логика блоков, реализуемость, требования.</div>
+              </div>
+              <div class="role">PM + Аккаунт + Программист</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node check decision">
+            <div class="meta">
+              <div class="t">
+                <div class="name">
+                  8) Решение: остались вопросы/правки?
+                  <span class="badge">ROMB</span>
+                </div>
+                <div class="desc">Если да — дизайнер дорисовывает и снова на контроль.</div>
+              </div>
+              <div class="role">Контроль</div>
+            </div>
+
+            <div class="branch" style="margin-top:10px;">
+              <div class="mini">
+                <div class="k"><span class="dot bad"></span> YES</div>
+                <ul>
+                  <li>Дизайнер дорисовывает</li>
+                  <li>Возврат на контрольную проверку</li>
+                </ul>
+              </div>
+              <div class="mini">
+                <div class="k"><span class="dot good"></span> NO</div>
+                <ul>
+                  <li>Переход к верстке</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node dev">
+            <div class="meta">
+              <div class="t">
+                <div class="name">9) Верстка: хедер + футер + главная</div>
+                <div class="desc">Адаптив, базовые компоненты, основные стили.</div>
+              </div>
+              <div class="role">Верстальщик</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node check">
+            <div class="meta">
+              <div class="t">
+                <div class="name">10) Проверка главной страницы</div>
+                <div class="desc">Соответствие дизайну, адаптив, логика.</div>
+              </div>
+              <div class="role">Программист + Аккаунт (+ SEO)</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node dev">
+            <div class="meta">
+              <div class="t">
+                <div class="name">11) Верстка отдельных страниц</div>
+                <div class="desc">Список услуг, карточка услуги, врачи, блог, контакты и т.д.</div>
+              </div>
+              <div class="role">Верстальщик</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node check">
+            <div class="meta">
+              <div class="t">
+                <div class="name">12) Проверка каждой страницы</div>
+                <div class="desc">Проверка по мере готовности каждой страницы.</div>
+              </div>
+              <div class="role">Программист + Аккаунт (+ SEO)</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node dev">
+            <div class="meta">
+              <div class="t">
+                <div class="name">13) Параллельно: интеграция в 1С-Битрикс</div>
+                <div class="desc">Программист может начинать натягивание верстки по готовым страницам.</div>
+              </div>
+              <div class="role">Программист</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node check">
+            <div class="meta">
+              <div class="t">
+                <div class="name">14) Финальная проверка всего сайта</div>
+                <div class="desc">Все страницы, формы, скорость, SEO-база, ссылки, ошибки.</div>
+              </div>
+              <div class="role">Программист + SEO + Аккаунт</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node dev">
+            <div class="meta">
+              <div class="t">
+                <div class="name">15) Финальное программирование / полировка</div>
+                <div class="desc">Доработки, стабильность, интеграции, админка.</div>
+              </div>
+              <div class="role">Программист</div>
+            </div>
+          </div>
+
+          <div class="arrow">↓</div>
+
+          <div class="node pm">
+            <div class="meta">
+              <div class="t">
+                <div class="name">16) Приёмка проекта</div>
+                <div class="desc">Финальное подтверждение результата.</div>
+              </div>
+              <div class="role">Аккаунт + PM</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SIDE -->
+      <div class="side">
+
+        <div class="panel">
+          <div class="panelHead">
+            <div class="label">Роли</div>
+          </div>
+          <div class="roles">
+            <div class="roleRow">
+              <div class="rname">Project Manager</div>
+              <div class="rdesc">сопровождение процессов<br>и контроль ТЗ</div>
+            </div>
+            <div class="roleRow">
+              <div class="rname">Аккаунт-менеджер</div>
+              <div class="rdesc">структура, требования,<br>согласования</div>
+            </div>
+            <div class="roleRow">
+              <div class="rname">Дизайнер</div>
+              <div class="rdesc">концепт, дизайн,<br>правки</div>
+            </div>
+            <div class="roleRow">
+              <div class="rname">SEO</div>
+              <div class="rdesc">логика, требования,<br>структура контента</div>
+            </div>
+            <div class="roleRow">
+              <div class="rname">Контент-менеджер</div>
+              <div class="rdesc">контентные блоки,<br>тексты</div>
+            </div>
+            <div class="roleRow">
+              <div class="rname">Верстальщик</div>
+              <div class="rdesc">HTML/CSS/JS,<br>адаптив</div>
+            </div>
+            <div class="roleRow">
+              <div class="rname">Программист</div>
+              <div class="rdesc">1С-Битрикс,<br>интеграция</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panelHead">
+            <div class="label">ТЗ и документы</div>
+          </div>
+          <div class="content">
+
+            <div class="node doc" style="margin-bottom:10px;">
+              <div class="meta">
+                <div class="t">
+                  <div class="name">Сквозное ТЗ (главный документ)</div>
+                  <div class="desc">
+                    PM ведёт требования и согласования на каждом этапе.  
+                    Это “единая точка правды”.
+                  </div>
+                </div>
+                <div class="role">PM</div>
+              </div>
+            </div>
+
+            <div class="node doc" style="margin-bottom:10px;">
+              <div class="meta">
+                <div class="t">
+                  <div class="name">ТЗ: Дизайнер → Верстальщик</div>
+                  <div class="desc">
+                    Комментарии по блокам, состояния, hover/active, адаптив, логика кнопок, поведение форм.
+                  </div>
+                </div>
+                <div class="role">Дизайнер</div>
+              </div>
+            </div>
+
+            <div class="node doc">
+              <div class="meta">
+                <div class="t">
+                  <div class="name">ТЗ: Верстальщик → Программист</div>
+                  <div class="desc">
+                    Как верстка “садится” на компоненты Битрикс, какие части динамические, что в админке.
+                  </div>
+                </div>
+                <div class="role">Верстальщик</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panelHead">
+            <div class="label">Подсказки</div>
+          </div>
+          <div class="note">
+            <div style="margin-bottom:10px;">
+              <span class="kbd">🖨️ Печать / PDF</span> — можно сохранить схему в PDF прямо из окна.
+            </div>
+            <div>
+              <span class="kbd">📋 Скопировать текст</span> — выгрузит схему в текстовый список (для ТЗ).
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function copyText(){
+      const text = [
+        "СХЕМА ПРОЦЕССА РАЗРАБОТКИ САЙТА",
+        "",
+        "1) Аккаунт-менеджер: структура базовых страниц сайта",
+        "2) Дизайнер: отрисовка шаблона / дизайн-концепт",
+        "3) Аккаунт + PM: детальная структура каждой страницы",
+        "4) Дизайнер: дизайн всего сайта",
+        "5) SEO + Контент: проверка",
+        "6) Если есть правки → дизайнер правит → снова проверка",
+        "7) PM + Аккаунт + Программист: контрольная проверка",
+        "8) Если есть вопросы → дизайнер дорисовывает → снова контроль",
+        "9) Верстальщик: верстка хедера/футера/главной",
+        "10) Проверка главной: программист + аккаунт (+ SEO)",
+        "11) Верстальщик: верстка отдельных страниц",
+        "12) Проверка страниц: программист + аккаунт (+ SEO)",
+        "13) Параллельно: программист интегрирует в 1С-Битрикс",
+        "14) Финальная проверка всего сайта: программист + SEO + аккаунт",
+        "15) Программист: финальная полировка",
+        "16) Аккаунт + PM: приемка проекта",
+        "",
+        "ТЗ:",
+        "- PM: сквозное ТЗ по проекту",
+        "- Дизайнер → Верстальщик: логика блоков, кнопок, состояния",
+        "- Верстальщик → Программист: интеграция в 1С-Битрикс"
+      ].join("\n");
+
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Скопировано ✅");
+      }).catch(() => {
+        prompt("Скопируй вручную:", text);
+      });
+    }
+  </script>
+</body>
+</html>
