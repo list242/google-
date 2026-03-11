@@ -87,36 +87,25 @@ function addTemplateRows(templateData, color) {
   const sheet = SpreadsheetApp.getActiveSheet();
   let lastRow = sheet.getLastRow();
 
-  // Переименование листа при первом запуске
-  if (lastRow === 0) sheet.setName("ТЗ САЙТА");
-
-  // Заголовки
+  // Переименование листа и заголовки при первом запуске
   if (lastRow === 0) {
+    sheet.setName("ТЗ САЙТА");
+
     const headers = [[
-      'Статус',
-      'Тип',
-      'Название',
-      'Описание',
-      'Где используется',
-      'Тип контента',
-      'Данные из ТЗ',
-      'Требует уточнения?',
-      'Источник',
-      'Примечания'
+      'Статус', 'Тип', 'Название', 'Описание', 'Где используется',
+      'Тип контента', 'Данные из ТЗ', 'Требует уточнения?', 'Источник', 'Примечания'
     ]];
 
-    sheet.getRange(1, 1, 1, 10).setValues(headers);
-
     const headerRange = sheet.getRange(1, 1, 1, 10);
-    headerRange.setBackground('#1a237e');
-    headerRange.setFontColor('#ffffff');
-    headerRange.setFontWeight('bold');
-    headerRange.setHorizontalAlignment('center');
-    headerRange.setVerticalAlignment('middle');
-    headerRange.setBorder(true, true, true, true, true, true, "#0d47a1", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    headerRange.setValues(headers)
+      .setBackground('#1a237e')
+      .setFontColor('#ffffff')
+      .setFontWeight('bold')
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, "#0d47a1", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
 
     sheet.setFrozenRows(1);
-    sheet.autoResizeColumns(1, 10);
     lastRow = 1;
   }
 
@@ -125,58 +114,73 @@ function addTemplateRows(templateData, color) {
     const lastCell = sheet.getRange(lastRow, 2).getValue();
     if (lastCell !== '' && lastCell !== 'Тип') {
       sheet.insertRowAfter(lastRow);
-      const emptyRowRange = sheet.getRange(lastRow + 1, 1, 1, 10);
-      emptyRowRange.setBackground('#f5f5f5');
+      sheet.getRange(lastRow + 1, 1, 1, 10).setBackground('#f5f5f5');
       lastRow++;
     }
   }
 
   const startRow = lastRow + 1;
-  const range = sheet.getRange(startRow, 1, templateData.length, 10);
-  range.setValues(templateData);
+  const numRows = templateData.length;
+  const dataRange = sheet.getRange(startRow, 1, numRows, 10);
+  dataRange.setValues(templateData);
 
-  // Валидация статуса
+  // Валидация — создаём один раз
   const statusRule = SpreadsheetApp.newDataValidation()
     .requireValueInList(['НЕ СДЕЛАНО', 'В РАБОТЕ', 'СДЕЛАНО'], true)
     .setAllowInvalid(false)
     .build();
 
-  // Валидация уточнения
-  const уточнениеRule = SpreadsheetApp.newDataValidation()
+  const clarificationRule = SpreadsheetApp.newDataValidation()
     .requireValueInList(['Да', 'Нет'], true)
     .setAllowInvalid(false)
     .build();
 
-  // Форматирование строк
-  for (let i = 0; i < templateData.length; i++) {
+  // Собираем пакетные массивы для backgrounds, fontWeights, validations
+  const darkenedColor = darkenColor(color, 0.1);
+  const statusValidations = [];
+  const clarificationValidations = [];
+  const typeBackgrounds = [];
+  const fontWeights = [];
+
+  for (let i = 0; i < numRows; i++) {
+    const rowType = templateData[i][1];
+
+    typeBackgrounds.push([(rowType === 'Блок' || rowType === 'Страница') ? darkenedColor : color]);
+
+    if (rowType === 'Блок' || rowType === 'Страница' || rowType === 'Элемент') {
+      fontWeights.push([['bold','bold','bold','bold','bold','bold','bold','bold','bold','bold']]);
+    } else {
+      fontWeights.push([['normal','normal','normal','normal','normal','normal','normal','normal','normal','normal']]);
+    }
+
+    statusValidations.push([(rowType !== 'Блок' && rowType !== 'Страница') ? statusRule : null]);
+    clarificationValidations.push([clarificationRule]);
+  }
+
+  // Пакетная установка фонов для колонки "Тип"
+  sheet.getRange(startRow, 2, numRows, 1).setBackgrounds(typeBackgrounds);
+
+  // Пакетная установка жирности
+  const weightValues = fontWeights.map(fw => fw[0]);
+  sheet.getRange(startRow, 1, numRows, 10).setFontWeights(weightValues);
+
+  // Пакетная установка валидаций
+  sheet.getRange(startRow, 1, numRows, 1).setDataValidations(statusValidations);
+  sheet.getRange(startRow, 8, numRows, 1).setDataValidations(clarificationValidations);
+
+  // Границы — по типам строк (группируем последовательные строки одного типа)
+  for (let i = 0; i < numRows; i++) {
     const row = startRow + i;
-    const rowType = templateData[i][1]; // Тип
+    const rowType = templateData[i][1];
     const rowRange = sheet.getRange(row, 1, 1, 10);
 
-    let rowColor = color;
-
-    // Блоки/страницы — жирные
     if (rowType === 'Блок' || rowType === 'Страница') {
-      rowColor = darkenColor(color, 0.1);
-      rowRange.setFontWeight('bold');
       rowRange.setBorder(true, true, true, true, null, null, "#424242", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
     } else if (rowType === 'Элемент') {
-      rowRange.setFontWeight('bold');
       rowRange.setBorder(null, null, true, null, null, null, "#bdbdbd", SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
     } else {
       rowRange.setBorder(true, true, true, true, true, true, "#e0e0e0", SpreadsheetApp.BorderStyle.SOLID);
     }
-
-    // Цвет для колонки "Тип"
-    sheet.getRange(row, 2).setBackground(rowColor);
-
-    // Проставляем статусы (выпадающий список) только на элементах и данных
-    if (rowType !== 'Блок' && rowType !== 'Страница') {
-      sheet.getRange(row, 1).setDataValidation(statusRule);
-    }
-
-    // Колонка "Требует уточнения?"
-    sheet.getRange(row, 8).setDataValidation(уточнениеRule);
   }
 
   sheet.autoResizeColumns(1, 10);
@@ -477,13 +481,6 @@ function darkenColor(hex, percent) {
   return rgbToHex(r, g, b);
 }
 
-function lightenColor(hex, percent) {
-  const rgb = hexToRgb(hex);
-  const r = Math.min(255, Math.floor(rgb.r + (255 - rgb.r) * percent));
-  const g = Math.min(255, Math.floor(rgb.g + (255 - rgb.g) * percent));
-  const b = Math.min(255, Math.floor(rgb.b + (255 - rgb.b) * percent));
-  return rgbToHex(r, g, b);
-}
 
 // ========================
 // ПРОСТЫЕ ШАБЛОНЫ ДЛЯ ОСТАЛЬНЫХ ФУНКЦИЙ
@@ -498,29 +495,6 @@ function addSimpleTemplate(name, color) {
   ];
   addTemplateRows(template, color);
 }
-// Добавь в конец основного файла
-function setupAnalyticsTrigger() {
-  // Удаляем старые триггеры
-  ScriptApp.getProjectTriggers().forEach(trigger => {
-    if (trigger.getHandlerFunction() === 'updateAnalyticsTrigger') {
-      ScriptApp.deleteTrigger(trigger);
-    }
-  });
-  
-  // Создаем триггер - обновление каждые 30 минут
-  ScriptApp.newTrigger('updateAnalyticsTrigger')
-    .timeBased()
-    .everyMinutes(30)
-    .create();
-  
-  SpreadsheetApp.getUi().alert('✅ Триггер аналитики настроен!');
-}
-
-function updateAnalyticsTrigger() {
-  createDesignAnalytics(); // Создает новый файл при каждом изменении
-}
-
-// Запусти один раз: setupAnalyticsTrigger()
 
 // Заглушки для остальных функций
 function addPriceList() { addSimpleTemplate('ПРАЙС_ЛИСТ', '#f3f4f9'); }
